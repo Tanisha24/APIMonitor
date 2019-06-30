@@ -12,14 +12,15 @@ def hello():
     return "Hello World!"
 
 
-@app.route('/hello', methods = ['GET','POST'])
-def api_hello():
+@app.route('/process/<path_id>', methods = ['GET','POST'])
+def api_hello(path_id):
+    receive_time=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    start=time.time()
     dict=request.headers
     headers={}
     body=""
-    receive_time=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    start=time.time()
-
+    path="/process/"+path_id
+    print(path)
     if request.method== 'GET':
         headers=get_headers_get(dict)
         body="INVALID"
@@ -28,11 +29,12 @@ def api_hello():
         print("content type printed")
         body=get_request_data(request)
         headers=get_headers_post(dict)
-    time.sleep(15)
+    time.sleep(1)#15--30
     duration=time.time()-start
     print(duration)
     data = {
         'method'  : request.method,
+        'request-path' : path,
         'headers' : headers,
         'query parameters' : request.args,
         'body':body,
@@ -45,6 +47,17 @@ def api_hello():
     resp.headers['Link'] = 'http://luisrei.com'
 
     return resp
+
+@app.errorhandler(404)
+def not_found(error=None):
+    message = {
+            'status': 404,
+            'message': 'Not Found: ' + request.url,
+    }
+    js =json.dumps(message)
+    resp = Response(js, status=404, mimetype='application/json')
+    return resp
+
 
 def get_headers_get(dict):
     headers={
