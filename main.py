@@ -1,10 +1,11 @@
 from flask import Flask
 from flask import Response
 from flask import request
-from datetime import datetime
+import datetime
 import time
 import ast
 import json
+from monitor_api import *
 app = Flask(__name__)
 
 @app.route("/")
@@ -12,9 +13,26 @@ def hello():
     return "Hello World!"
 
 
+@app.route("/stats")
+def api_stats():
+    avg_response_time=get_average_response_time()
+    request_last_hour=get_request_details_hourly()
+    request_last_day=get_request_details_daily()
+    statistics={
+    "Avg Response Time/Day":avg_response_time,
+    "Requests in last hour":request_last_hour,
+    "Requests in last 24 hours": request_last_day
+    }
+    js = json.dumps(statistics)
+
+    resp = Response(js, status=200, mimetype='application/json')
+    # resp.headers['Link'] = 'http://luisrei.com'
+    return resp
+
+
 @app.route('/process/<path_id>', methods = ['GET','POST'])
 def api_hello(path_id):
-    receive_time=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    receive_time=datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     start=time.time()
     dict=request.headers
     headers={}
@@ -41,6 +59,7 @@ def api_hello(path_id):
         'time': receive_time,
         'duration': time.strftime("%H:%M:%S", time.gmtime(duration))
     }
+    insert_req(request.method,receive_time,duration)
     js = json.dumps(data)
 
     resp = Response(js, status=200, mimetype='application/json')
